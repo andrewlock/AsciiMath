@@ -8,10 +8,11 @@ internal readonly struct Token(TokenType type, ReadOnlyMemory<char> text, Symbol
     public readonly Converter? Converter = converter;
 }
 
-internal readonly struct SymbolDetail(Symbol? symbol, TokenType type)
+internal readonly struct SymbolDetail(Symbol? symbol, TokenType type, Converter? converter = null)
 {
     public readonly Symbol? Symbol = symbol;
     public readonly TokenType Type = type;
+    public readonly Converter? Converter = converter;
 }
 
 internal enum TokenType

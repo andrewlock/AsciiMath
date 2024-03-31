@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace AsciiMathParser;
@@ -14,6 +15,7 @@ internal abstract class ValueNode<T>(T value) : Node
     public T Value { get; } = value;
 }
 
+[DebuggerDisplay("{Value}")]
 internal class NumberNode(ReadOnlyMemory<char> number) : ValueNode<ReadOnlyMemory<char>>(number)
 {
     public override string ToString(string? format, IFormatProvider? formatProvider) => ToString();
@@ -38,10 +40,11 @@ internal class NumberNode(ReadOnlyMemory<char> number) : ValueNode<ReadOnlyMemor
     }
 }
 
+[DebuggerDisplay("{Value}")]
 internal class TextNode(ReadOnlyMemory<char> text) : ValueNode<ReadOnlyMemory<char>>(text)
 {
     public override string ToString(string? format, IFormatProvider? formatProvider) => ToString();
-    public override string ToString() => $"\"{text}\"";
+    public override string ToString() => $"\"{Value}\"";
     
     protected bool Equals(TextNode other)
     {
@@ -62,7 +65,42 @@ internal class TextNode(ReadOnlyMemory<char> text) : ValueNode<ReadOnlyMemory<ch
     }
 }
 
-internal class SymbolNode(Symbol symbol, ReadOnlyMemory<char> text, TokenType type) : ValueNode<Symbol>(symbol)
+[DebuggerDisplay("{Value}")]
+internal class ColorNode(string text, int r, int g, int b) : ValueNode<string>(text)
+{
+    public override string ToString(string? format, IFormatProvider? formatProvider) => ToString();
+    public override string ToString() => Value;
+
+    public int Red { get; } = r;
+    public int Green { get; } = g;
+    public int Blue { get; } = b;
+
+    public string ToHexRgb() => $"#{Red:x2}{Green:x2}{Blue:x2}";
+
+    protected bool Equals(ColorNode other)
+    {
+        return Red == other.Red
+               && Green == other.Green
+               && Blue == other.Blue
+               && Value == other.Value;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (ReferenceEquals(null, obj)) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj.GetType() != this.GetType()) return false;
+        return Equals((ColorNode)obj);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Red, Green, Blue, Value);
+    }
+}
+
+[DebuggerDisplay("{Value}, {Text}, {Type}")]
+internal class SymbolNode(Symbol? symbol, ReadOnlyMemory<char> text, TokenType type) : ValueNode<Symbol?>(symbol)
 {
     public ReadOnlyMemory<char> Text { get; } = text;
     public TokenType Type { get; } = type;
@@ -96,15 +134,11 @@ internal class SymbolNode(Symbol symbol, ReadOnlyMemory<char> text, TokenType ty
             return null;
         }
 
-        if (token.Value.Symbol is null)
-        {
-            throw new ArgumentException("Token.Symbol was null, but requires a value");
-        }
-
-        return new SymbolNode(token.Value.Symbol.Value, token.Value.Text, token.Value.Type);
+        return new SymbolNode(token.Value.Symbol, token.Value.Text, token.Value.Type);
     }
 }
 
+[DebuggerDisplay("{Value}")]
 internal class IdentifierNode(ReadOnlyMemory<char> text) : ValueNode<ReadOnlyMemory<char>>(text)
 {
     public static readonly IdentifierNode Empty = new("".AsMemory());
@@ -156,10 +190,9 @@ internal abstract class InnerNode : Node
     public int Count => Children.Count;
 
     public Node this[int index] => Children[index];
-
-    public SequenceNode ToSeq() => new SequenceNode(Children);
 }
 
+[DebuggerDisplay("{ToString()}")]
 internal class SequenceNode: InnerNode
 {
     public SequenceNode(IEnumerable<Node> nodes)
@@ -197,17 +230,18 @@ internal class SequenceNode: InnerNode
     }
 }
 
+[DebuggerDisplay("{ToString()}")]
 internal class ParenNode : InnerNode
 {
     public ParenNode(SymbolNode? lparen, Node? expression, SymbolNode? rparen)
     {
-        if (lparen is not null && lparen.Type != TokenType.LeftParen)
+        if (lparen is not null && lparen.Type is not (TokenType.LeftParen or TokenType.LeftRightParen))
         {
-            throw new ArgumentException($"lparen must be {nameof(TokenType.LeftParen)}, but found {lparen.Type}", nameof(lparen));
+            throw new ArgumentException($"lparen must be {nameof(TokenType.LeftParen)} or {nameof(TokenType.LeftRightParen)},, but found {lparen.Type}", nameof(lparen));
         }
-        if (rparen is not null && rparen.Type != TokenType.RightParen)
+        if (rparen is not null && rparen.Type is not (TokenType.RightParen or TokenType.LeftRightParen))
         {
-            throw new ArgumentException($"rparen must be {nameof(TokenType.RightParen)}, but found {rparen.Type}", nameof(rparen));
+            throw new ArgumentException($"rparen must be {nameof(TokenType.RightParen)} or {nameof(TokenType.LeftRightParen)}, but found {rparen.Type}", nameof(rparen));
         }
 
         LParen = lparen;
@@ -249,17 +283,18 @@ internal class ParenNode : InnerNode
     }
 }
 
+[DebuggerDisplay("{ToString()}")]
 internal class MatrixNode : InnerNode
 {
-    public MatrixNode(SymbolNode lparen, IEnumerable<IEnumerable<Node>> rows, SymbolNode rparen)
+    public MatrixNode(SymbolNode? lparen, IEnumerable<IEnumerable<Node?>> rows, SymbolNode? rparen)
     {
-        if (lparen.Type != TokenType.LeftParen)
+        if (lparen is not null && lparen.Type is not (TokenType.LeftParen or TokenType.LeftRightParen))
         {
-            throw new ArgumentException($"lparen must be {nameof(TokenType.LeftParen)}, but found {lparen.Type}", nameof(lparen));
+            throw new ArgumentException($"lparen must be {nameof(TokenType.LeftParen)} or {nameof(TokenType.LeftRightParen)},, but found {lparen.Type}", nameof(lparen));
         }
-        if (rparen.Type != TokenType.RightParen)
+        if (rparen is not null && rparen.Type is not (TokenType.RightParen or TokenType.LeftRightParen))
         {
-            throw new ArgumentException($"rparen must be {nameof(TokenType.RightParen)}, but found {rparen.Type}", nameof(rparen));
+            throw new ArgumentException($"rparen must be {nameof(TokenType.RightParen)} or {nameof(TokenType.LeftRightParen)}, but found {rparen.Type}", nameof(rparen));
         }
 
         LParen = lparen;
@@ -270,43 +305,106 @@ internal class MatrixNode : InnerNode
         }
     }
 
-    public SymbolNode LParen { get; }
+    public SymbolNode? LParen { get; }
 
-    public SymbolNode RParen { get; }
+    public SymbolNode? RParen { get; }
 
-    public override string ToString() => $"{LParen}{string.Join(",", Children)}{RParen}";
+    public override string ToString() =>
+        $"{(LParen is null ? "{:" : LParen)}{string.Join(",", Children)}{(RParen is null ? ":}" : RParen)}";
     public override string ToString(string? format, IFormatProvider? formatProvider) => ToString();
+    
+    protected bool Equals(MatrixNode other)
+    {
+        return Equals(LParen, other.LParen) && Equals(RParen, other.RParen) && Children.SequenceEqual(other.Children);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (ReferenceEquals(null, obj)) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj.GetType() != this.GetType()) return false;
+        return Equals((MatrixNode)obj);
+    }
+
+    public override int GetHashCode()
+    {
+        var hashCode = new HashCode();
+        hashCode.Add(LParen);
+        hashCode.Add(RParen);
+        foreach (var child in Children)
+        {
+            hashCode.Add(child);
+        }
+
+        return hashCode.ToHashCode();
+    }
 }
 
-internal class MatrixRowNode(IEnumerable<Node> nodes) : InnerNode
+internal class MatrixRowNode : InnerNode
 {
-    public override string ToString() => $"({string.Join(",", nodes)})";
+    public MatrixRowNode(IEnumerable<Node?> nodes)
+    {
+        foreach (var node in nodes)
+        {
+            Add(node ?? new EmptyNode());
+        }
+    }
+
+    public override string ToString() => $"({string.Join(",", Children)})";
     public override string ToString(string? format, IFormatProvider? formatProvider) => ToString();
+
+    protected bool Equals(MatrixRowNode other)
+    {
+        return Children.SequenceEqual(other.Children);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (ReferenceEquals(null, obj)) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj.GetType() != this.GetType()) return false;
+        return Equals((MatrixRowNode)obj);
+    }
+
+    public override int GetHashCode()
+    {
+        var hashCode = new HashCode();
+        foreach (var child in Children)
+        {
+            hashCode.Add(child);
+        }
+
+        return hashCode.ToHashCode();
+    }
 }
 
 internal class EmptyNode : InnerNode
 {
-    public static readonly EmptyNode Instance = new();
-
-    private EmptyNode()
-    {
-    }
-
     public override string ToString() => "";
     public override string ToString(string? format, IFormatProvider? formatProvider) => ToString();
+
+    public override bool Equals(object? obj)
+    {
+        if (ReferenceEquals(null, obj)) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        return obj.GetType() == this.GetType();
+    }
+
+    public override int GetHashCode() => 1;
 }
 
+[DebuggerDisplay("{ToString()}")]
 internal class GroupNode : InnerNode
 {
     public GroupNode(SymbolNode? lparen, Node? expression, SymbolNode? rparen)
     {
-        if (lparen is not null && lparen.Type != TokenType.LeftParen)
+        if (lparen is not null && lparen.Type is not (TokenType.LeftParen or TokenType.LeftRightParen))
         {
-            throw new ArgumentException($"lparen must be {nameof(TokenType.LeftParen)}, but found {lparen.Type}", nameof(lparen));
+            throw new ArgumentException($"lparen must be {nameof(TokenType.LeftParen)} or {nameof(TokenType.LeftRightParen)},, but found {lparen.Type}", nameof(lparen));
         }
-        if (rparen is not null && rparen.Type != TokenType.RightParen)
+        if (rparen is not null && rparen.Type is not (TokenType.RightParen or TokenType.LeftRightParen))
         {
-            throw new ArgumentException($"rparen must be {nameof(TokenType.RightParen)}, but found {rparen.Type}", nameof(rparen));
+            throw new ArgumentException($"rparen must be {nameof(TokenType.RightParen)} or {nameof(TokenType.LeftRightParen)}, but found {rparen.Type}", nameof(rparen));
         }
 
         LParen = lparen;
@@ -348,6 +446,7 @@ internal class GroupNode : InnerNode
     }
 }
 
+[DebuggerDisplay("{ToString()}")]
 internal class UnaryOpNode : InnerNode
 {
     public UnaryOpNode(SymbolNode @operator, Node operand1)
@@ -388,6 +487,7 @@ internal class UnaryOpNode : InnerNode
     }
 }
 
+[DebuggerDisplay("{ToString()}")]
 internal class BinaryOpNode : InnerNode
 {
     public BinaryOpNode(SymbolNode @operator, Node operand1, Node operand2)
@@ -430,6 +530,7 @@ internal class BinaryOpNode : InnerNode
     }
 }
 
+[DebuggerDisplay("{ToString()}")]
 internal class InfixOpNode : InnerNode
 {
     public InfixOpNode(SymbolNode @operator, Node operand1, Node operand2)
@@ -472,13 +573,14 @@ internal class InfixOpNode : InnerNode
     }
 }
 
+[DebuggerDisplay("{ToString()}")]
 internal class SubSupNode : InnerNode
 {
     public SubSupNode(Node expression, Node? sub, Node? sup)
     {
         Children.Add(expression);
-        Children.Add(sub ?? EmptyNode.Instance);
-        Children.Add(sup ?? EmptyNode.Instance);
+        Children.Add(sub ?? new EmptyNode());
+        Children.Add(sup ?? new EmptyNode());
     }
 
     public Node BaseExpression => Children[0];

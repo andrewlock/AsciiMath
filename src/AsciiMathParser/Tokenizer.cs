@@ -89,7 +89,7 @@ internal class Tokenizer(string input)
 
     private Token ReadTexText()
     {
-        Debug.Assert(_span.Span.Slice(0, 5) == "text(");
+        Debug.Assert(_span.Span.Slice(0, 5) is "text(");
         var span = _span.Slice(5);
         var nextQuote = span.Span.IndexOf(')');
         if (nextQuote < 0)
@@ -196,7 +196,7 @@ internal class Tokenizer(string input)
             {
                 var symbol = s.Value;
                 _span = _span.Slice(length);
-                return new Token(symbol.Type, span, symbol.Symbol);
+                return new Token(symbol.Type, span, symbol.Symbol, symbol.Converter);
             }
             
             // not found, try shortening and repeat

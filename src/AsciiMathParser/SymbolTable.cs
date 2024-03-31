@@ -1,5 +1,7 @@
 ﻿using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Text;
 
 namespace AsciiMathParser;
 
@@ -211,8 +213,7 @@ internal class SymbolTable
             "stackrel" => new(Symbol.stackrel, TokenType.Binary),
             "overset" => new(Symbol.overset, TokenType.Binary),
             "underset" => new(Symbol.underset, TokenType.Binary),
-            "color" => new(Symbol.color,
-                TokenType.Binary), //=> new(Symbol.convert_operand1 => ::AsciiMath::Parser.instance_method(:convert_to_color)),
+            "color" => new(Symbol.color, TokenType.Binary, new Converter(convertBinary1: ConvertToColor)),
             "_" => new(Symbol.sub, TokenType.Infix),
             "^" => new(Symbol.sup, TokenType.Infix),
             "hat" => new(Symbol.hat, TokenType.Unary),
@@ -685,4 +686,152 @@ internal class SymbolTable
     }.ToFrozenDictionary());
 
     public const int MaxKeyLength = 21;
+
+
+    public static (int r, int g, int b)? TryGetColor(ReadOnlySpan<char> text)
+    {
+        if (text.Equals("aqua", StringComparison.OrdinalIgnoreCase))
+            return (0, 255, 255);
+        if (text.Equals("black", StringComparison.OrdinalIgnoreCase))
+            return (0, 0, 0);
+        if (text.Equals("blue", StringComparison.OrdinalIgnoreCase))
+            return (0, 0, 255);
+        if (text.Equals("fuchsia", StringComparison.OrdinalIgnoreCase))
+            return (255, 0, 255);
+        if (text.Equals("gray", StringComparison.OrdinalIgnoreCase))
+            return (128, 128, 128);
+        if (text.Equals("green", StringComparison.OrdinalIgnoreCase))
+            return (0, 128, 0);
+        if (text.Equals("lime", StringComparison.OrdinalIgnoreCase))
+            return (0, 255, 0);
+        if (text.Equals("maroon", StringComparison.OrdinalIgnoreCase))
+            return (128, 0, 0);
+        if (text.Equals("navy", StringComparison.OrdinalIgnoreCase))
+            return (0, 0, 128);
+        if (text.Equals("olive", StringComparison.OrdinalIgnoreCase))
+            return (128, 128, 0);
+        if (text.Equals("purple", StringComparison.OrdinalIgnoreCase))
+            return (128, 0, 128);
+        if (text.Equals("red", StringComparison.OrdinalIgnoreCase))
+            return (255, 0, 0);
+        if (text.Equals("silver", StringComparison.OrdinalIgnoreCase))
+            return (192, 192, 192);
+        if (text.Equals("teal", StringComparison.OrdinalIgnoreCase))
+            return (0, 128, 128);
+        if (text.Equals("white", StringComparison.OrdinalIgnoreCase))
+            return (255, 255, 255);
+        if (text.Equals("yellow", StringComparison.OrdinalIgnoreCase))
+            return (255, 255, 0);
+        return null;
+    }
+
+    private static Node ConvertToColor(Node node)
+    {
+        // set the capacity to be large enough that everything fits
+        // in one chunk
+        var sb = new StringBuilder(capacity: 8);
+        AppendColorText(sb, node);
+
+        int r; 
+        int g; 
+        int b; 
+        if (sb.Length == 4)
+        {
+            foreach (var chunk in sb.GetChunks())
+            {
+                if(chunk.Span[0] == '#'
+                   && char.IsAsciiHexDigit(chunk.Span[1])
+                   && char.IsAsciiHexDigit(chunk.Span[2])
+                   && char.IsAsciiHexDigit(chunk.Span[3]))
+                {
+                    var c = int.Parse(chunk.Span.Slice(1, 1), NumberStyles.HexNumber);
+                    r = (c << 4) + c;
+                    c = int.Parse(chunk.Span.Slice(2, 1), NumberStyles.HexNumber);
+                    g = (c << 4) + c;
+                    c = int.Parse(chunk.Span.Slice(3, 1), NumberStyles.HexNumber);
+                    b = (c << 4) + c;
+
+                    return new ColorNode(sb.ToString(), r, g, b);
+                }
+            }
+        }
+        else if (sb.Length == 7)
+        {
+            foreach (var chunk in sb.GetChunks())
+            {
+                if(chunk.Span[0] == '#'
+                   && char.IsAsciiHexDigit(chunk.Span[1])
+                   && char.IsAsciiHexDigit(chunk.Span[2])
+                   && char.IsAsciiHexDigit(chunk.Span[3])
+                   && char.IsAsciiHexDigit(chunk.Span[4])
+                   && char.IsAsciiHexDigit(chunk.Span[5])
+                   && char.IsAsciiHexDigit(chunk.Span[6]))
+                {
+                    r = int.Parse(chunk.Span.Slice(1, 2), NumberStyles.HexNumber);
+                    g = int.Parse(chunk.Span.Slice(3, 2), NumberStyles.HexNumber);
+                    b = int.Parse(chunk.Span.Slice(5, 2), NumberStyles.HexNumber);
+
+                    return new ColorNode(sb.ToString(), r, g, b);
+                }
+            }
+        }
+
+        var str = sb.ToString();
+        (r, g, b) = TryGetColor(str) ?? (0, 0, 0);
+
+        return new ColorNode(str, r, g, b);
+
+        static void AppendColorText(StringBuilder sb, Node? node)
+        {
+            switch (node)
+            {
+                case SequenceNode s:
+                    foreach (var n in s)
+                    {
+                        AppendColorText(sb, n);
+                    }
+
+                    break;
+                case NumberNode n:
+                    sb.Append(n.Value);
+                    break;
+                case TextNode n:
+                    sb.Append(n.Value);
+                    break;
+                case IdentifierNode n:
+                    sb.Append(n.Value);
+                    break;
+                case SymbolNode n:
+                    sb.Append(n.Value);
+                    break;
+                case GroupNode n:
+                    AppendColorText(sb, n.Expression);
+                    break;
+                case ParenNode n:
+                    AppendColorText(sb, n.LParen);
+                    AppendColorText(sb, n.Expression);
+                    AppendColorText(sb, n.RParen);
+                    break;
+                case SubSupNode n:
+                    AppendColorText(sb, n.BaseExpression);
+                    AppendColorText(sb, n.SubExpression);
+                    AppendColorText(sb, n.SupExpression);
+                    break;
+                case UnaryOpNode n:
+                    AppendColorText(sb, n.Operator);
+                    AppendColorText(sb, n.Operand);
+                    break;
+                case BinaryOpNode n:
+                    AppendColorText(sb, n.Operator);
+                    AppendColorText(sb, n.Operand1);
+                    AppendColorText(sb, n.Operand2);
+                    break;
+                case InfixOpNode n:
+                    AppendColorText(sb, n.Operand1);
+                    AppendColorText(sb, n.Operator);
+                    AppendColorText(sb, n.Operand2);
+                    break;
+            }
+        }
+    }
 }

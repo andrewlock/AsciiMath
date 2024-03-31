@@ -186,6 +186,8 @@ internal class Parser
                         {
                             separators[index] = child;
                         }
+
+                        i++;
                     }
                 }
                 else if (node.Expression is ParenNode)
@@ -206,65 +208,56 @@ internal class Parser
                     return node;
                 }
 
-                throw new NotImplementedException();
-                // List<List<Node>> mappedRows = new();
-                // foreach(var row in rows)
-                // {
-                //     // TODO: This doesn't look right?
-                //     //var rowContent = row.Expression;
-                //     if (row is SequenceNode sequence)
-                //     {
-                //         List<List<Node>>? chunks = null;
-                //         List<Node>? currentChunk = null;
-                //
-                //         foreach (var child in sequence)
-                //         {
-                //             if (IsMatrixSeparator(child))
-                //             {
-                //                 // bail out if jagged
-                //                 if (mappedRows.Count > 0 && currentChunk?.Count != mappedRows[0].Count)
-                //                 {
-                //                     return node;
-                //                 }
-                //
-                //                 chunks ??= new();
-                //                 chunks.Add(currentChunk ?? []);
-                //                 currentChunk = null;
-                //             }
-                //             else
-                //             {
-                //                 currentChunk ??= new();
-                //                 currentChunk.Add(child);
-                //             }
-                //         }
-                //         
-                //         chunks ??= new();
-                //         chunks.Add(currentChunk ?? []);
-                //     }
-                //     else
-                //     {
-                //         if (row is InnerNode n)
-                //         {
-                //             if (n.Count == 0)
-                //             {
-                //                 mappedRows.Add([null]);
-                //             } else if (n.Count == 1)
-                //             {
-                //                 mappedRows.Add([n[0]]);
-                //             }
-                //             else
-                //             {
-                //                 mappedRows.Add([n.ToSeq()]);
-                //             }
-                //         }
-                //
-                //     }
-                //
-                // });
+                List<List<Node?>> mappedRows = new();
+                List<Node>? currentChunk = null;
+                foreach(var row in rows)
+                {
+                    var rowContent = row is ParenNode p ? p.Expression
+                        : row is GroupNode g ? g.Expression : null;
 
+                    if (rowContent is SequenceNode sequence)
+                    {
+                        var mappedRow = new List<Node?>();
+                        currentChunk ??= new();
+                        currentChunk.Clear();
+                
+                        // We're re-parenting here, so we need to take a copy of the sequence first
+                        // TODO: if we don't need to keep track of the parent this is probably easier
+                        // If we do, we can probably update things
+                        var list = new List<Node>(sequence.Count);
+                        foreach (var child in sequence)
+                        {
+                            list.Add(child);
+                        }
+                        foreach (var child in list)
+                        {
+                            if (IsMatrixSeparator(child))
+                            {
+                                // bail out if jagged
+                                mappedRow.Add(ConvertChunkToNode(currentChunk));
+                                currentChunk.Clear();
+                            }
+                            else
+                            {
+                                currentChunk.Add(child);
+                            }
+                        }
 
+                        mappedRow.Add(ConvertChunkToNode(currentChunk));
+                        mappedRows.Add(mappedRow);
+                    }
+                    else
+                    {
+                        mappedRows.Add([ToExpression([rowContent])]);
+                    }
+                }
 
-                static bool IsMatrixSeparator(Node n) => n is IdentifierNode i && i.Value.Equals(",".AsMemory());
+                return new MatrixNode(node.LParen, mappedRows, node.RParen);
+
+                static Node? ConvertChunkToNode(List<Node> chunk)
+                    => chunk.Count == 1 ? chunk[0] : ToExpression(chunk);
+
+                static bool IsMatrixSeparator(Node n) => n is IdentifierNode { Value.Span: "," };
 
                 static bool AreAllMatrixSeparator(IEnumerable<Node> nodes)
                 {
@@ -286,11 +279,15 @@ internal class Parser
                         if (node is ParenNode { LParen: { } lParen, RParen: { } rParen })
                         {
                             if (!(lParen.Type == TokenType.LeftParen
-                                 && rParen.Type == TokenType.LeftParen
-                                 && (lParen.Text.Span is "(" && lParen.Value == Symbol.lparen
-                                    && rParen.Text.Span is ")"  && rParen.Value == Symbol.rparen)
-                                 && (lParen.Text.Span is "[" && lParen.Value == Symbol.lbracket
-                                    && rParen.Text.Span is "]"  && rParen.Value == Symbol.rbracket)))
+                                 && rParen.Type == TokenType.RightParen
+                                 && ((lParen.Text.Span is "(" 
+                                      && lParen.Value == Symbol.lparen
+                                      && rParen.Text.Span is ")"
+                                      && rParen.Value == Symbol.rparen)
+                                     || (lParen.Text.Span is "["
+                                         && lParen.Value == Symbol.lbracket
+                                         && rParen.Text.Span is "]"
+                                         && rParen.Value == Symbol.rbracket))))
                             {
                                 return false;
                             }
@@ -304,21 +301,16 @@ internal class Parser
                     return true;
                 }
 
-                // static Node ToSeq(ICollection<Node> nodes)
-                // {
-                //     if 
-                //     def expression(*e)
-                //     case e.length
-                //         when 0
-                //     nil
-                //         when 1
-                //     e[0]
-                //     else
-                //     Sequence.new(e)
-                //     end
-                //         end
-                //
-                // }
+                static Node? ToExpression(ICollection<Node> node)
+                    => node switch
+                    {
+                        { Count: 0 } => null,
+                        { Count: 1 } inner => inner.First(),
+                        _ => new SequenceNode(node),
+                        // I'm not sure which of these are correct :thinkin:
+                        // InnerNode n => n.ToSeq(),
+                        // _ => new SequenceNode([node]),
+                    };
             }
         }
 
@@ -336,17 +328,18 @@ internal class Parser
         static Node HandleUnary(Tokenizer tokenizer, TokenType? closeParenType, Token token1)
         {
             var s = TryUnwrapParen(ParseSimpleExpression(tokenizer, closeParenType)) ?? IdentifierNode.Empty;
-            s = ConvertNode(s, token1.Converter?.ConvertUnary);
+            s = token1.Converter?.ConvertUnary?.Invoke(s) ?? s;
             return new UnaryOpNode(SymbolNode.From(token1), s);
         }
 
-        static Node HandleBinary(Tokenizer tokenizer, TokenType? closeParenType, Token token1)
+        static Node HandleBinary(Tokenizer tokenizer, TokenType? closeParenType, Token token)
         {
             var s1 = TryUnwrapParen(ParseSimpleExpression(tokenizer, closeParenType)) ?? IdentifierNode.Empty;
             var s2 = TryUnwrapParen(ParseSimpleExpression(tokenizer, closeParenType)) ?? IdentifierNode.Empty;
-            s1 = ConvertNode(s1, token1.Converter?.ConvertBinary1);
-            s2 = ConvertNode(s2, token1.Converter?.ConvertBinary2);
-            return new BinaryOpNode(SymbolNode.From(token1), s1, s2);
+            s1 = token.Converter?.ConvertBinary1?.Invoke(s1) ?? s1;
+            s2 = token.Converter?.ConvertBinary2?.Invoke(s2) ?? s2;
+
+            return new BinaryOpNode(SymbolNode.From(token), s1, s2);
         }
     }
 
@@ -365,11 +358,9 @@ internal class Parser
 
     [return: NotNullIfNotNull(nameof(node))]
     private static Node? TryUnwrapParen(Node? node)
-        => node is ParenNode paren ? GroupNode.From(paren) : node;
-
-    private static Node ConvertNode(Node node, object? token1Converter)
-    {
-        // TODO: implement converters
-        return node;
-    }
+        => node is ParenNode paren
+           && (paren.LParen is null || paren.LParen.Type == TokenType.LeftParen)
+           && (paren.RParen is null || paren.RParen.Type == TokenType.RightParen)
+            ? GroupNode.From(paren)
+            : node;
 }
