@@ -6,6 +6,9 @@ internal record TestSpec(string asciiMath, Node? ast = null, string? mathml = nu
     public static IEnumerable<object[]> AstTests() =>
         Specs.Values.Where(x => x.ast is not null).Select(x => new object[] { x.asciiMath });
 
+    public static IEnumerable<object[]> MathMlTests() =>
+        Specs.Values.Where(x => x.mathml is not null).Select(x => new object[] { x.asciiMath });
+
     public static Dictionary<string, TestSpec> Specs = new TestSpec[]
     {
         new TestSpec("""underset(_)(hat A) = hat A exp j vartheta_0""",

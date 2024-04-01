@@ -23,4 +23,15 @@ public class ParserTests
 
         parsed.Should().NotBeNull().And.Be(spec.ast);
     }
+
+    [Theory]
+    [MemberData(nameof(TestSpec.MathMlTests), MemberType = typeof(TestSpec))]
+    public void ConvertsToMathMlCorrectly(string asciiMath)
+    {
+        var spec = TestSpec.Specs[asciiMath];
+        var parsed = Parser.Parse(spec.asciiMath);
+        var converted = MarkupBuilder.AppendExpression(parsed, []);
+
+        converted.Should().Be(spec.mathml);
+    }
 }

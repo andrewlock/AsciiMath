@@ -591,8 +591,7 @@ internal class SymbolTable
         { "stackrel", new(Symbol.stackrel, TokenType.Binary) },
         { "overset", new(Symbol.overset, TokenType.Binary) },
         { "underset", new(Symbol.underset, TokenType.Binary) },
-        { "color", new(Symbol.color, TokenType.Binary) },
-        // { "color", new(Symbol.color, TokenType.Binary, new(Symbol.convert_operand1 =>::AsciiMath::Parser.instance_method(:convert_to_color))
+        {"color", new(Symbol.color, TokenType.Binary, new Converter(convertBinary1: ConvertToColor)) },
         { "_", new(Symbol.sub, TokenType.Infix) },
         { "^", new(Symbol.sup, TokenType.Infix) },
         { "hat", new(Symbol.hat, TokenType.Unary) },

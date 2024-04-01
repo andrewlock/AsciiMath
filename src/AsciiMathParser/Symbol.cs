@@ -79,10 +79,10 @@ public enum Symbol
     lbrace,
     rbrace,
     vbar,
-    lrparen,
+    // lrparen,
     langle,
     rangle,
-    il,
+    parallel, // can't work out how this is generated
 
 // Miscellaneous symbols
     integral,

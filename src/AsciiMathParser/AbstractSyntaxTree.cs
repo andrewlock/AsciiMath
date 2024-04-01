@@ -169,7 +169,7 @@ internal abstract class InnerNode : Node
 {
     protected List<Node> Children { get; } = new();
 
-    public IEnumerator<Node> GetEnumerator() => Children.GetEnumerator();
+    public virtual IEnumerator<Node> GetEnumerator() => Children.GetEnumerator();
 
     public void Add(Node node)
     {
@@ -308,6 +308,8 @@ internal class MatrixNode : InnerNode
     public SymbolNode? LParen { get; }
 
     public SymbolNode? RParen { get; }
+
+    public override IEnumerator<MatrixRowNode> GetEnumerator() => Children.Cast<MatrixRowNode>().GetEnumerator();
 
     public override string ToString() =>
         $"{(LParen is null ? "{:" : LParen)}{string.Join(",", Children)}{(RParen is null ? ":}" : RParen)}";
