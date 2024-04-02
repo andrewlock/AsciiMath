@@ -1,17 +1,21 @@
-﻿using System.Buffers;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace AsciiMathParser;
 
-internal static class MarkupBuilder
+internal class MathMlMarkupBuilder
 {
-    private const RowMode DefaultRowMode = RowMode.Avoid;
-    private const bool EscapeNonAscii = true;
-    private static readonly SearchValues<char> ValuesToEscape = SearchValues.Create("&<>");
+    private readonly StringBuilder _sb = new();
+    private readonly RowMode _defaultRowMode;
+    private readonly bool _escapeNonAscii;
 
-    internal static bool TryGetSymbol(Symbol symbol, [NotNullWhen(true)] out DisplayDetail? entry, bool fixPhi = true)
+    public MathMlMarkupBuilder(RowMode rowMode = RowMode.Avoid, bool escapeNonAscii = true)
+    {
+        _defaultRowMode = rowMode;
+        _escapeNonAscii = escapeNonAscii;
+    }
+
+    protected static bool TryGetSymbol(Symbol symbol, [NotNullWhen(true)] out DisplayDetail? entry, bool fixPhi = true)
     {
         // https://github.com/asciidoctor/asciimath/issues/52
         entry = (symbol, fixPhi) switch
@@ -201,16 +205,16 @@ internal static class MarkupBuilder
             (Symbol.Leftrightarrow, _) => new("\u21D4", DisplaySymbolType.Operator),
 
             // # Unary tags
-            (Symbol.sqrt, _) => new(null, DisplaySymbolType.Sqrt),
-            (Symbol.cancel, _) => new(null, DisplaySymbolType.Cancel),
+            (Symbol.sqrt, _) => new(null!, DisplaySymbolType.Sqrt),
+            (Symbol.cancel, _) => new(null!, DisplaySymbolType.Cancel),
 
             // # Binary tags
-            (Symbol.root, _) => new(null, DisplaySymbolType.Root),
-            (Symbol.frac, _) => new(null, DisplaySymbolType.Frac),
-            (Symbol.stackrel, _) => new(null, DisplaySymbolType.Over),
-            (Symbol.overset, _) => new(null, DisplaySymbolType.Over),
-            (Symbol.underset, _) => new(null, DisplaySymbolType.Under),
-            (Symbol.color, _) => new(null, DisplaySymbolType.Color),
+            (Symbol.root, _) => new(null!, DisplaySymbolType.Root),
+            (Symbol.frac, _) => new(null!, DisplaySymbolType.Frac),
+            (Symbol.stackrel, _) => new(null!, DisplaySymbolType.Over),
+            (Symbol.overset, _) => new(null!, DisplaySymbolType.Over),
+            (Symbol.underset, _) => new(null!, DisplaySymbolType.Under),
+            (Symbol.color, _) => new(null!, DisplaySymbolType.Color),
 
             (Symbol.sub, _) => new("_", DisplaySymbolType.Operator),
             (Symbol.sup, _) => new("^", DisplaySymbolType.Operator),
@@ -300,28 +304,28 @@ internal static class MarkupBuilder
         return entry is not null;
     }
 
-    public static string AppendExpression(Node? ast, IEnumerable<KeyValuePair<string, string>> attributes)
+    public string Serialize(Node? ast, IEnumerable<KeyValuePair<string, string>> attributes)
     {
         if (ast is null)
         {
             return string.Empty;
         }
 
-        var sb = new StringBuilder();
-        sb.Append("<math");
+        _sb.Clear();
+        _sb.Append("<math");
         foreach (var attr in attributes)
         {
-            sb.Append(' ')
+            _sb.Append(' ')
                 .Append(attr.Key)
                 .Append("=\"");
-            AppendEscaped(sb, attr.Value);
-            sb.Append('"');
+            AppendEscaped(_sb, attr.Value);
+            _sb.Append('"');
         }
 
-        sb.Append('>');
-        Append(sb, ast, RowMode.Omit);
-        sb.Append("</math>");
-        return sb.ToString();
+        _sb.Append('>');
+        Append(ast, RowMode.Omit);
+        _sb.Append("</math>");
+        return _sb.ToString();
 
         static void AppendEscaped(StringBuilder sb, string value)
         {
@@ -348,17 +352,17 @@ internal static class MarkupBuilder
         }
     }
 
-    private static void Append(StringBuilder sb, Node? ast, RowMode rowMode = RowMode.Avoid)
+    void Append(Node? ast, RowMode rowMode = RowMode.Avoid)
     {
         if (rowMode == RowMode.Force)
         {
             if (ast is SequenceNode seq)
             {
-                AppendRow(sb, seq);
+                AppendRow(seq);
             }
             else
             {
-                AppendRow(sb, ast);
+                AppendRow(ast);
             }
 
             return;
@@ -371,26 +375,26 @@ internal static class MarkupBuilder
                 {
                     foreach (var node in seq)
                     {
-                        Append(sb, node);
+                        Append(node);
                     }
                 }
                 else
                 {
-                    AppendRow(sb, seq);
+                    AppendRow(seq);
                 }
 
                 break;
             case GroupNode n:
-                Append(sb, n.Expression);
+                Append(n.Expression);
                 break;
             case TextNode n:
-                AppendText(sb, n);
+                AppendText(n);
                 break;
             case NumberNode n:
-                AppendNumber(sb, n);
+                AppendNumber(n);
                 break;
             case IdentifierNode n:
-                AppendIdentifierOrOperator(sb, n.Value);
+                AppendIdentifierOrOperator(n.Value);
                 break;
             case SymbolNode n:
                 if (n.Value is not null && TryGetSymbol(n.Value.Value, out var symbolDetail))
@@ -399,29 +403,29 @@ internal static class MarkupBuilder
                         or DisplaySymbolType.Accent or DisplaySymbolType.LeftParen
                         or DisplaySymbolType.RightParen or DisplaySymbolType.LeftRightParen)
                     {
-                        AppendOperator(sb, symbolDetail.Value.Text.AsMemory());
+                        AppendOperator(symbolDetail.Value.Text.AsMemory());
                     }
                     else
                     {
-                        AppendIdentifier(sb, symbolDetail.Value.Text.AsMemory());
+                        AppendIdentifier(symbolDetail.Value.Text.AsMemory());
                     }
                 }
                 else
                 {
-                    AppendIdentifierOrOperator(sb, n.Text);
+                    AppendIdentifierOrOperator(n.Text);
                 }
                 break;
             case ParenNode n:
-                AppendFenced(sb, n.LParen, n.Expression, n.RParen);
+                AppendFenced(n.LParen, n.Expression, n.RParen);
                 break;
             case SubSupNode n:
                 if (IsUnderOver(n.BaseExpression))
                 {
-                    AppendUnderOver(sb, n.BaseExpression, n.SubExpression, n.SupExpression);
+                    AppendUnderOver(n.BaseExpression, n.SubExpression, n.SupExpression);
                 }
                 else
                 {
-                    AppendSubSup(sb, n.BaseExpression, n.SubExpression, n.SupExpression);
+                    AppendSubSup(n.BaseExpression, n.SubExpression, n.SupExpression);
                 }
 
                 break;
@@ -431,35 +435,35 @@ internal static class MarkupBuilder
                     switch (uSymbol.Type)
                     {
                         case DisplaySymbolType.Identifier:
-                            AppendIdentifierUnary(sb, uSymbol.Text.AsMemory(), n.Operand);
+                            AppendIdentifierUnary(uSymbol.Text.AsMemory(), n.Operand);
                             break;
                         case DisplaySymbolType.Operator:
-                            AppendOperatorUnary(sb, uSymbol.Text.AsMemory(), n.Operand);
+                            AppendOperatorUnary(uSymbol.Text.AsMemory(), n.Operand);
                             break;
                         case DisplaySymbolType.Wrap:
                             var lParen = uSymbol.WrapLParen is { } left ? left.AsMemory() : ReadOnlyMemory<char>.Empty;
-                            var rParen = uSymbol.WrapLParen is { } right ? right.AsMemory() : ReadOnlyMemory<char>.Empty;
-                            AppendFenced(sb, lParen , n.Operand, rParen);
+                            var rParen = uSymbol.WrapRParen is { } right ? right.AsMemory() : ReadOnlyMemory<char>.Empty;
+                            AppendFenced(lParen , n.Operand, rParen);
                             break;
                         case DisplaySymbolType.Accent:
                             if (uSymbol.Position == Position.Over)
                             {
-                                AppendUnderOver(sb, n.Operand, null, n.Operator);
+                                AppendUnderOver(n.Operand, null, n.Operator);
                             }
                             else
                             {
-                                AppendUnderOver(sb, n.Operand, n.Operator, null);
+                                AppendUnderOver(n.Operand, n.Operator, null);
                             }
 
                             break;
                         case DisplaySymbolType.Font:
-                            AppendFont(sb, uSymbol.Text.AsMemory(), n.Operand);
+                            AppendFont(uSymbol.Text.AsMemory(), n.Operand);
                             break;
                         case DisplaySymbolType.Cancel:
-                            AppendCancel(sb, n.Operand);
+                            AppendCancel(n.Operand);
                             break;
                         case DisplaySymbolType.Sqrt:
-                            AppendSqrt(sb, n.Operand);
+                            AppendSqrt(n.Operand);
                             break;
                         default:
                             throw new InvalidOperationException("Unexpected symbol: " + uSymbol);
@@ -474,19 +478,19 @@ internal static class MarkupBuilder
                     switch (bSymbol.Type)
                     {
                         case DisplaySymbolType.Over:
-                            AppendUnderOver(sb, n.Operand2, null, n.Operand1);
+                            AppendUnderOver(n.Operand2, null, n.Operand1);
                             break;
                         case DisplaySymbolType.Under:
-                            AppendUnderOver(sb, n.Operand2, n.Operand1, null);
+                            AppendUnderOver(n.Operand2, n.Operand1, null);
                             break;
                         case DisplaySymbolType.Root:
-                            AppendRoot(sb, n.Operand2, n.Operand1);
+                            AppendRoot(n.Operand2, n.Operand1);
                             break;
                         case DisplaySymbolType.Color when n.Operand1 is ColorNode c:
-                            AppendColor(sb, c.ToHexRgb().AsMemory(), n.Operand2);
+                            AppendColor(c.ToHexRgb().AsMemory(), n.Operand2);
                             break;
                         case DisplaySymbolType.Frac:
-                            AppendFraction(sb, n.Operand1, n.Operand2);
+                            AppendFraction(n.Operand1, n.Operand2);
                             break;
                         default:
                             throw new InvalidOperationException("Unexpected symbol: " + bSymbol);
@@ -500,7 +504,7 @@ internal static class MarkupBuilder
                     switch (iSymbol.Type)
                     {
                         case DisplaySymbolType.Frac:
-                            AppendFraction(sb, n.Operand1, n.Operand2);
+                            AppendFraction(n.Operand1, n.Operand2);
                             break;
                         default:
                             throw new InvalidOperationException("Unexpected symbol: " + iSymbol);
@@ -509,12 +513,12 @@ internal static class MarkupBuilder
 
                 break;
             case MatrixNode n:
-                AppendMatrix(sb, n.LParen, n, n.RParen);
+                AppendMatrix(n.LParen, n, n.RParen);
                 break;
         }
     }
 
-    static bool TryResolveParen(SymbolNode? paren, out ReadOnlyMemory<char> value)
+    bool TryResolveParen(SymbolNode? paren, out ReadOnlyMemory<char> value)
     {
         if (paren?.Value is null)
         {
@@ -532,214 +536,212 @@ internal static class MarkupBuilder
         return true;
     }
 
-    static bool IsUnderOver(Node node)
+    bool IsUnderOver(Node node)
     {
         var symbol = node is UnaryOpNode u ? u.Operator : node;
         return TryResolveSymbol(symbol)?.IsUnderOver ?? false;
     }
 
-    static bool IsAccent(Node? node)
+    bool IsAccent(Node? node)
     {
         var symbol = node is UnaryOpNode u ? u.Operator : node;
         return TryResolveSymbol(symbol)?.Type == DisplaySymbolType.Accent;
     }
 
-    static DisplayDetail? TryResolveSymbol(Node? node)
+    DisplayDetail? TryResolveSymbol(Node? node)
         => node switch
         {
             SymbolNode s => TryResolveSymbol(s.Value),
             _ => null
         };
-    static DisplayDetail? TryResolveSymbol(Symbol? symbol)
+    DisplayDetail? TryResolveSymbol(Symbol? symbol)
         => symbol switch
         {
             { } s when TryGetSymbol(s, out var detail) => detail,
             _ => null,
         };
 
-    static void AppendText(StringBuilder sb, TextNode node) => sb.Append("<mtext>").AppendEscapedText(node.Value).Append("</mtext>");
-    static void AppendNumber(StringBuilder sb, NumberNode node) => sb.Append("<mn>").AppendEscapedText(node.Value).Append("</mn>");
-    static void AppendIdentifier(StringBuilder sb, ReadOnlyMemory<char> value) => sb.Append("<mi>").AppendEscapedText(value).Append("</mi>");
-    static void AppendOperator(StringBuilder sb, ReadOnlyMemory<char> value) => sb.Append("<mo>").AppendEscapedText(value).Append("</mo>");
+    void AppendText(TextNode node) => _sb.Append("<mtext>").AppendEscapedText(node.Value, _escapeNonAscii).Append("</mtext>");
+    void AppendNumber(NumberNode node) => _sb.Append("<mn>").AppendEscapedText(node.Value, _escapeNonAscii).Append("</mn>");
+    void AppendIdentifier(ReadOnlyMemory<char> value) => _sb.Append("<mi>").AppendEscapedText(value, _escapeNonAscii).Append("</mi>");
+    void AppendOperator(ReadOnlyMemory<char> value) => _sb.Append("<mo>").AppendEscapedText(value, _escapeNonAscii).Append("</mo>");
 
-    static void AppendMatrix(StringBuilder sb, SymbolNode? lParen, MatrixNode node, SymbolNode? rParen)
+    void AppendMatrix(SymbolNode? lParen, MatrixNode node, SymbolNode? rParen)
     {
-        var haveLeft = TryResolveParen(lParen, out var left);
-        var haveRight = TryResolveParen(rParen, out var right);
+        TryResolveParen(lParen, out var left);
+        TryResolveParen(rParen, out var right);
 
         if (!left.IsEmpty || !right.IsEmpty)
         {
-            sb.Append("<mrow>");
+            _sb.Append("<mrow>");
             if (!left.IsEmpty)
             {
-                sb.Append("<mo>").AppendEscapedText(left).Append("</mo>");
+                _sb.Append("<mo>").AppendEscapedText(left, _escapeNonAscii).Append("</mo>");
             }
         }
 
-        sb.Append("<mtable>");
+        _sb.Append("<mtable>");
         foreach (var row in node)
         {
-            sb.Append("<mtr>");
+            _sb.Append("<mtr>");
             foreach (var cell in row)
             {
-                sb.Append("<mtd>");
-                Append(sb, cell);
-                sb.Append("</mtd>");
+                _sb.Append("<mtd>");
+                Append(cell);
+                _sb.Append("</mtd>");
             }
-            sb.Append("</mtr>");
+            _sb.Append("</mtr>");
         }
 
-        sb.Append("</mtable>");
+        _sb.Append("</mtable>");
 
         if (!left.IsEmpty || !right.IsEmpty)
         {
             if (!right.IsEmpty)
             {
-                sb.Append("<mo>").AppendEscapedText(right).Append("</mo>");
+                _sb.Append("<mo>").AppendEscapedText(right, _escapeNonAscii).Append("</mo>");
             }
 
-            sb.Append("</mrow>");
+            _sb.Append("</mrow>");
         }
     }
 
-    static void AppendRow(StringBuilder sb, Node node)
+    void AppendRow(Node? node)
     {
-        sb.Append("<mrow>");
+        _sb.Append("<mrow>");
         if (node is SequenceNode seq)
         {
             foreach (var n in seq)
             {
-                Append(sb, n);
+                Append(n);
             }            
         }
         else
         {
-            Append(sb, node);
+            Append(node);
         }
         
 
-        sb.Append("</mrow>");
+        _sb.Append("</mrow>");
     }
-    static void AppendIdentifierUnary(StringBuilder sb, ReadOnlyMemory<char> identifier, Node? op)
+    void AppendIdentifierUnary(ReadOnlyMemory<char> identifier, Node? op)
     {
-        sb.Append("<mrow>");
-        AppendIdentifier(sb, identifier);
-        Append(sb, op, rowMode: DefaultRowMode);
-        sb.Append("</mrow>");
-    }
-
-    static void AppendOperatorUnary(StringBuilder sb, ReadOnlyMemory<char> identifier, Node? op)
-    {
-        sb.Append("<mrow>");
-        AppendOperator(sb, identifier);
-        Append(sb, op, rowMode: DefaultRowMode);
-        sb.Append("</mrow>");
+        _sb.Append("<mrow>");
+        AppendIdentifier(identifier);
+        Append(op, rowMode: _defaultRowMode);
+        _sb.Append("</mrow>");
     }
 
-    static void AppendFont(StringBuilder sb, ReadOnlyMemory<char> style, Node? e)
+    void AppendOperatorUnary(ReadOnlyMemory<char> identifier, Node? op)
     {
-        sb.Append("<mstyle mathvariant=\"")
+        _sb.Append("<mrow>");
+        AppendOperator(identifier);
+        Append(op, rowMode: _defaultRowMode);
+        _sb.Append("</mrow>");
+    }
+
+    void AppendFont(ReadOnlyMemory<char> style, Node? e)
+    {
+        _sb.Append("<mstyle mathvariant=\"")
             .Append(style)
             .Append("\">");
-        Append(sb, e);
-        sb.Append("</mstyle>");
+        Append(e);
+        _sb.Append("</mstyle>");
     }
 
-    static void AppendColor(StringBuilder sb, ReadOnlyMemory<char> color, Node? e)
+    void AppendColor(ReadOnlyMemory<char> color, Node? e)
     {
-        sb.Append("<mstyle mathcolor=\"")
+        _sb.Append("<mstyle mathcolor=\"")
             .Append(color)
             .Append("\">");
-        Append(sb, e);
-        sb.Append("</mstyle>");
+        Append(e);
+        _sb.Append("</mstyle>");
     }
 
-    static void AppendCancel(StringBuilder sb, Node? e)
+    void AppendCancel(Node? e)
     {
-        sb.Append("<menclose notation=\"updiagonalstrike\">");
-        Append(sb, e, RowMode.Omit);
-        sb.Append("</menclose>");
+        _sb.Append("<menclose notation=\"updiagonalstrike\">");
+        Append(e, RowMode.Omit);
+        _sb.Append("</menclose>");
     }
 
-    static void AppendSqrt(StringBuilder sb, Node? e)
+    void AppendSqrt(Node? e)
     {
-        sb.Append("<msqrt>");
-        Append(sb, e, DefaultRowMode);
-        sb.Append("</msqrt>");
+        _sb.Append("<msqrt>");
+        Append(e, _defaultRowMode);
+        _sb.Append("</msqrt>");
     }
 
-    static void AppendRoot(StringBuilder sb, Node? @base, Node? index)
+    void AppendRoot(Node? @base, Node? index)
     {
-        sb.Append("<mroot>");
-        Append(sb, @base, DefaultRowMode);
-        Append(sb, index, DefaultRowMode);
-        sb.Append("</mroot>");
+        _sb.Append("<mroot>");
+        Append(@base, _defaultRowMode);
+        Append(index, _defaultRowMode);
+        _sb.Append("</mroot>");
     }
 
-    static void AppendFraction(StringBuilder sb, Node? numerator, Node? denominator)
+    void AppendFraction(Node? numerator, Node? denominator)
     {
-        sb.Append("<mfrac>");
-        Append(sb, numerator, DefaultRowMode);
-        Append(sb, denominator, DefaultRowMode);
-        sb.Append("</mfrac>");
+        _sb.Append("<mfrac>");
+        Append(numerator, _defaultRowMode);
+        Append(denominator, _defaultRowMode);
+        _sb.Append("</mfrac>");
     }
     
     // https://github.com/asciidoctor/asciimath/issues/58
-    static void AppendIdentifierOrOperator(StringBuilder sb, ReadOnlyMemory<char> value)
+    void AppendIdentifierOrOperator(ReadOnlyMemory<char> value)
     {
         if (value.IsEmpty || char.IsLetterOrDigit(value.Span[0]))
         {
-            AppendIdentifier(sb, value);
+            AppendIdentifier(value);
         }
         else
         {
-            AppendOperator(sb, value);
+            AppendOperator(value);
         }
     }
 
-    static void AppendFenced(
-        StringBuilder sb,
+    void AppendFenced(
         SymbolNode? leftParen,
         Node? node,
         SymbolNode? rightParen)
     {
-        var haveLeft = TryResolveParen(leftParen, out var left);
-        var haveRight = TryResolveParen(rightParen, out var right);
-        AppendFenced(sb, left, node, right);
+        TryResolveParen(leftParen, out var left);
+        TryResolveParen(rightParen, out var right);
+        AppendFenced(left, node, right);
     }
 
-    static void AppendFenced(
-        StringBuilder sb, 
+    void AppendFenced(
         ReadOnlyMemory<char> left,
         Node? node,
         ReadOnlyMemory<char> right)
     {
         if (left.IsEmpty && right.IsEmpty)
         {
-            Append(sb, node);
+            Append(node);
             return;
         }
 
-        sb.Append("<mrow>");
+        _sb.Append("<mrow>");
         if (!left.IsEmpty)
         {
-            sb.Append("<mo>").AppendEscapedText(left).Append("</mo>");
+            _sb.Append("<mo>").AppendEscapedText(left, _escapeNonAscii).Append("</mo>");
         }
-        Append(sb, node);
+        Append(node);
         if (!right.IsEmpty)
         {
-            sb.Append("<mo>").AppendEscapedText(right).Append("</mo>");
+            _sb.Append("<mo>").AppendEscapedText(right, _escapeNonAscii).Append("</mo>");
         }
 
-        sb.Append("</mrow>");
+        _sb.Append("</mrow>");
     }
 
-    private static void AppendUnderOver(StringBuilder sb, Node baseExpression, Node? sub, Node? sup)
+    void AppendUnderOver(Node baseExpression, Node? sub, Node? sup)
     {
         var accentUnder = false;
         var accent = false;
-        var subRowMode = DefaultRowMode;
-        var supRowMode = DefaultRowMode;
+        var subRowMode = _defaultRowMode;
+        var supRowMode = _defaultRowMode;
 
         if (IsAccent(sub))
         {
@@ -755,123 +757,85 @@ internal static class MarkupBuilder
 
         if (sub is not null && sup is not null)
         {
-            sb.Append("<munderover");
+            _sb.Append("<munderover");
             if (accent)
             {
-                sb.Append(" accent=\"true\"");
+                _sb.Append(" accent=\"true\"");
             }
             if (accentUnder)
             {
-                sb.Append(" accentunder=\"true\"");
+                _sb.Append(" accentunder=\"true\"");
             }
 
-            sb.Append('>');
-            Append(sb, baseExpression, DefaultRowMode);
-            Append(sb, sub, subRowMode);
-            Append(sb, sup, supRowMode);
-            sb.Append("</munderover>");
+            _sb.Append('>');
+            Append(baseExpression, _defaultRowMode);
+            Append(sub, subRowMode);
+            Append(sup, supRowMode);
+            _sb.Append("</munderover>");
         }
         else if (sub is not null)
         {
-            sb.Append("<munder");
+            _sb.Append("<munder");
             if (accentUnder)
             {
-                sb.Append(" accentunder=\"true\"");
+                _sb.Append(" accentunder=\"true\"");
             }
 
-            sb.Append('>');
-            Append(sb, baseExpression, DefaultRowMode);
-            Append(sb, sub, subRowMode);
-            sb.Append("</munder>");
+            _sb.Append('>');
+            Append(baseExpression, _defaultRowMode);
+            Append(sub, subRowMode);
+            _sb.Append("</munder>");
         }
         else if (sup is not null)
         {
-            sb.Append("<mover");
+            _sb.Append("<mover");
             if (accent)
             {
-                sb.Append(" accent=\"true\"");
+                _sb.Append(" accent=\"true\"");
             }
 
-            sb.Append('>');
-            Append(sb, baseExpression, DefaultRowMode);
-            Append(sb, sup, supRowMode);
-            sb.Append("</mover>");
+            _sb.Append('>');
+            Append(baseExpression, _defaultRowMode);
+            Append(sup, supRowMode);
+            _sb.Append("</mover>");
         }
         else
         {
-            Append(sb, baseExpression);
+            Append(baseExpression);
         }
     }
 
-    private static void AppendSubSup(StringBuilder sb, Node baseExpression, Node? sub, Node? sup)
+    void AppendSubSup(Node baseExpression, Node? sub, Node? sup)
     {
         if (sub is not null && sup is not null)
         {
-            sb.Append("<msubsup>");
-            Append(sb, baseExpression, DefaultRowMode);
-            Append(sb, sub, DefaultRowMode);
-            Append(sb, sup, DefaultRowMode);
-            sb.Append("</msubsup>");
+            _sb.Append("<msubsup>");
+            Append(baseExpression, _defaultRowMode);
+            Append(sub, _defaultRowMode);
+            Append(sup, _defaultRowMode);
+            _sb.Append("</msubsup>");
 
         }
         else if (sub is not null)
         {
-            sb.Append("<msub>");
-            Append(sb, baseExpression, DefaultRowMode);
-            Append(sb, sub, DefaultRowMode);
-            sb.Append("</msub>");
+            _sb.Append("<msub>");
+            Append(baseExpression, _defaultRowMode);
+            Append(sub, _defaultRowMode);
+            _sb.Append("</msub>");
         }
         else if (sup is not null)
         {
-            sb.Append("<msup>");
-            Append(sb, baseExpression, DefaultRowMode);
-            Append(sb, sup, DefaultRowMode);
-            sb.Append("</msup>");
+            _sb.Append("<msup>");
+            Append(baseExpression, _defaultRowMode);
+            Append(sup, _defaultRowMode);
+            _sb.Append("</msup>");
         }
         else
         {
-            Append(sb, baseExpression);
+            Append(baseExpression);
         }
     }
 
-    private static StringBuilder AppendEscapedText(this StringBuilder sb, ReadOnlyMemory<char> text)
-    {
-        // check for non-ascii and Values to escape
-        if (text.Span.IndexOfAny(ValuesToEscape) == -1
-            && (!EscapeNonAscii || text.Span.IndexOfAnyExceptInRange((char)0, (char)127) == -1))
-        {
-            // all fine, append everything
-            sb.Append(text);
-            return sb;
-        }
-
-        // need to loop through
-        foreach (var c in text.Span)
-        {
-            if (c == '&')
-            {
-                sb.Append("&amp;");
-            }else if (c == '<')
-            {
-                sb.Append("&lt;");
-            }
-            else if (c == '>')
-            {
-                sb.Append("&gt;");
-            }
-            else if (c > 127 && EscapeNonAscii)
-            {
-                sb.AppendFormat(CultureInfo.InvariantCulture, $"&#x{((int)c):X};");
-            }
-            else
-            {
-                sb.Append(c);
-            }
-        }
-
-        return sb;
-    }
-    
     internal enum RowMode
     {
         Omit,
@@ -907,5 +871,5 @@ internal static class MarkupBuilder
         Under,
     }
     
-    public readonly record struct DisplayDetail(string Text, DisplaySymbolType Type, bool IsUnderOver = false, Position Position = Position.Over, string? WrapLParen = null, string? WrapRParen = null);
+    internal readonly record struct DisplayDetail(string Text, DisplaySymbolType Type, bool IsUnderOver = false, Position Position = Position.Over, string? WrapLParen = null, string? WrapRParen = null);
 }

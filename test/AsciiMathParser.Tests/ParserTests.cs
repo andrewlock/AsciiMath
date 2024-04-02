@@ -30,8 +30,25 @@ public class ParserTests
     {
         var spec = TestSpec.Specs[asciiMath];
         var parsed = Parser.Parse(spec.asciiMath);
-        var converted = MarkupBuilder.AppendExpression(parsed, []);
+        var builder = new MathMlMarkupBuilder();
+        var converted = builder.Serialize(parsed, []);
 
         converted.Should().Be(spec.mathml);
+    }
+
+    [Theory(Skip = "A lot of these cases aren't supported")]
+    [MemberData(nameof(AsciiMathTestSpec.AllTests), MemberType = typeof(AsciiMathTestSpec))]
+    public void ConvertsToMathMlCorrectly2(string input, string output)
+    {
+        var parsed = Parser.Parse(input);
+        var builder = new MathMlMarkupBuilder(escapeNonAscii: false);
+        var converted = builder.Serialize(parsed, []);
+
+        var expected = output
+            .Replace(">-<", ">\u2212<")
+            .Replace(">〈<", ">\u2329<")
+            .Replace(">〉<", ">\u232A<");
+
+        converted.Should().Be($"<math>{expected}</math>");
     }
 }
