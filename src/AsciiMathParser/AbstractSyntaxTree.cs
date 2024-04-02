@@ -1,12 +1,10 @@
-﻿using System.Collections;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace AsciiMathParser;
 
 internal abstract class Node : IFormattable
 {
-    public Node? Parent { get; set; }
     public abstract string ToString(string? format, IFormatProvider? formatProvider);
 }
 
@@ -19,7 +17,7 @@ internal abstract class ValueNode<T>(T value) : Node
 internal class NumberNode(ReadOnlyMemory<char> number) : ValueNode<ReadOnlyMemory<char>>(number)
 {
     public override string ToString(string? format, IFormatProvider? formatProvider) => ToString();
-    public override string ToString() => number.ToString();
+    public override string ToString() => Value.ToString();
     
     protected bool Equals(NumberNode other)
     {
@@ -123,7 +121,7 @@ internal class SymbolNode(Symbol? symbol, ReadOnlyMemory<char> text, TokenType t
 
     public override int GetHashCode()
     {
-        return HashCode.Combine((int)Value, Text, (int)Type);
+        return HashCode.Combine((int?)Value, Text, (int)Type);
     }
 
     [return: NotNullIfNotNull(nameof(token))]
@@ -173,17 +171,11 @@ internal abstract class InnerNode : Node
 
     public void Add(Node node)
     {
-        if (node.Parent is InnerNode inner)
-        {
-            inner.Remove(node);
-        }
-        node.Parent = this;
         Children.Add(node);
     }
 
     public bool Remove(Node item)
     {
-        item.Parent = null;
         return Children.Remove(item);
     }
 

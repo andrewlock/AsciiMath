@@ -1,5 +1,4 @@
-﻿using System.Collections.Frozen;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 
 namespace AsciiMathParser;
 
@@ -113,6 +112,7 @@ internal class Parser
 
         return (sub, sup) switch
         {
+            // Not 100% this _can't_ be null... but we'll see
             ({ }, { }) => new SubSupNode(s, TryUnwrapParen(sub), TryUnwrapParen(sup)),
             ({ }, _) => new SubSupNode(s, TryUnwrapParen(sub), null),
             (_, { }) => new SubSupNode(s, null, TryUnwrapParen(sup)),
@@ -221,15 +221,7 @@ internal class Parser
                         currentChunk ??= new();
                         currentChunk.Clear();
                 
-                        // We're re-parenting here, so we need to take a copy of the sequence first
-                        // TODO: if we don't need to keep track of the parent this is probably easier
-                        // If we do, we can probably update things
-                        var list = new List<Node>(sequence.Count);
                         foreach (var child in sequence)
-                        {
-                            list.Add(child);
-                        }
-                        foreach (var child in list)
                         {
                             if (IsMatrixSeparator(child))
                             {

@@ -1,5 +1,7 @@
 ﻿namespace AsciiMathParser;
 
+// Keeping the original names for simplicity
+// ReSharper disable InconsistentNaming
 public enum Symbol
 {
     // Operation symbols

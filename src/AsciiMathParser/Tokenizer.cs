@@ -56,8 +56,8 @@ internal class Tokenizer(string input)
         {
             '"' => ReadQuotedText(),
             't' when _span.Span.Slice(0, 5) is "text(" => ReadTexText(),
-            '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9' => ReadNumber() ?? ReadSymbol() ?? throw new NotImplementedException(),
-            _ => ReadSymbol()  ?? throw new NotImplementedException(),
+            '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9' => ReadNumber() ?? ReadSymbol(),
+            _ => ReadSymbol(),
         };
     }
 
@@ -151,7 +151,7 @@ internal class Tokenizer(string input)
         return new Token(TokenType.Number, span);
     }
 
-    private Token? ReadSymbol()
+    private Token ReadSymbol()
     {
         int length = 0;
         while (length < SymbolTable.MaxKeyLength && length < _span.Length)
@@ -184,7 +184,8 @@ internal class Tokenizer(string input)
 
         if (length == 0)
         {
-            return null;
+            // should never happen!
+            return new Token(TokenType.Eof, ReadOnlyMemory<char>.Empty);
         }
 
         // try to get the symbol from the table

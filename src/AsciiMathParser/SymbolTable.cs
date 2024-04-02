@@ -687,7 +687,7 @@ internal class SymbolTable
     public const int MaxKeyLength = 21;
 
 
-    public static (int r, int g, int b)? TryGetColor(ReadOnlySpan<char> text)
+    private static (int r, int g, int b)? TryGetColor(ReadOnlySpan<char> text)
     {
         if (text.Equals("aqua", StringComparison.OrdinalIgnoreCase))
             return (0, 255, 255);
