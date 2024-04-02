@@ -388,7 +388,7 @@ internal class MathMlMarkupBuilder
                 Append(n.Expression);
                 break;
             case TextNode n:
-                AppendText(n);
+                AppendText(n.Value);
                 break;
             case NumberNode n:
                 AppendNumber(n);
@@ -404,6 +404,10 @@ internal class MathMlMarkupBuilder
                         or DisplaySymbolType.RightParen or DisplaySymbolType.LeftRightParen)
                     {
                         AppendOperator(symbolDetail.Value.Text.AsMemory());
+                    }
+                    else if (symbolDetail.Value.Type is DisplaySymbolType.Text)
+                    {
+                        AppendText(symbolDetail.Value.Text.AsMemory());
                     }
                     else
                     {
@@ -561,7 +565,7 @@ internal class MathMlMarkupBuilder
             _ => null,
         };
 
-    void AppendText(TextNode node) => _sb.Append("<mtext>").AppendEscapedText(node.Value, _escapeNonAscii).Append("</mtext>");
+    void AppendText(ReadOnlyMemory<char> value) => _sb.Append("<mtext>").AppendEscapedText(value, _escapeNonAscii).Append("</mtext>");
     void AppendNumber(NumberNode node) => _sb.Append("<mn>").AppendEscapedText(node.Value, _escapeNonAscii).Append("</mn>");
     void AppendIdentifier(ReadOnlyMemory<char> value) => _sb.Append("<mi>").AppendEscapedText(value, _escapeNonAscii).Append("</mi>");
     void AppendOperator(ReadOnlyMemory<char> value) => _sb.Append("<mo>").AppendEscapedText(value, _escapeNonAscii).Append("</mo>");
@@ -860,8 +864,6 @@ internal class MathMlMarkupBuilder
         Root,
         Color,
         Frac,
-        
-        // TODO: This one is currently unused I think?
         Text,
     }
 
