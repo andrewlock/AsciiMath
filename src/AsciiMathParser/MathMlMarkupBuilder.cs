@@ -3,9 +3,60 @@ using System.Text;
 
 namespace AsciiMathParser;
 
+internal class LatexMarkupBuilder : MathMlMarkupBuilder
+{
+    public string Serialize(Node? ast, IEnumerable<KeyValuePair<string, string>> attributes)
+    {
+        if (ast is null)
+        {
+            return string.Empty;
+        }
+
+        _sb.Clear();
+        _sb.Append("<math");
+        foreach (var attr in attributes)
+        {
+            _sb.Append(' ')
+                .Append(attr.Key)
+                .Append("=\"");
+            AppendEscaped(_sb, attr.Value);
+            _sb.Append('"');
+        }
+
+        _sb.Append('>');
+        Append(ast, RowMode.Omit);
+        _sb.Append("</math>");
+        return _sb.ToString();
+
+        static void AppendEscaped(StringBuilder sb, string value)
+        {
+            var span = value.AsSpan();
+            while (span.IndexOf('"') is var index and >= 0)
+            {
+                if (index > 0)
+                {
+                    sb.Append(span.Slice(0, index));
+                }
+
+                sb.Append("\\\""); // append \"
+                if (index == span.Length - 1)
+                {
+                    // finished
+                    return;
+                }
+
+                span = span.Slice(index + 1);
+            }
+
+            // no more quotes, add the rest
+            sb.Append(span);
+        }
+    }
+}
+
 internal class MathMlMarkupBuilder
 {
-    private readonly StringBuilder _sb = new();
+    protected readonly StringBuilder _sb = new();
     private readonly RowMode _defaultRowMode;
     private readonly bool _escapeNonAscii;
 
@@ -15,7 +66,7 @@ internal class MathMlMarkupBuilder
         _escapeNonAscii = escapeNonAscii;
     }
 
-    protected static bool TryGetSymbol(Symbol symbol, [NotNullWhen(true)] out DisplayDetail? entry, bool fixPhi = true)
+    protected virtual bool TryGetSymbol(Symbol symbol, [NotNullWhen(true)] out DisplayDetail? entry, bool fixPhi = true)
     {
         // https://github.com/asciidoctor/asciimath/issues/52
         entry = (symbol, fixPhi) switch
