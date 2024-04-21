@@ -1,10 +1,10 @@
 <Project>
   <PropertyGroup>
-    <PackageReleaseNotes Condition="'$(PackageVersion)' == '0.1.1-preview'">
+    <PackageReleaseNotes Condition="'$(PackageVersion)' == '0.2.0-beta'">
       <![CDATA[
 
 Features
-- Add missing package metadata
+- Allow including the math as a title
 
 ]]>
     </PackageReleaseNotes>
