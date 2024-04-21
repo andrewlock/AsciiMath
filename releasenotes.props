@@ -1,10 +1,10 @@
 <Project>
   <PropertyGroup>
-    <PackageReleaseNotes Condition="'$(PackageVersion)' == '0.1.0-preview'">
+    <PackageReleaseNotes Condition="'$(PackageVersion)' == '0.1.1-preview'">
       <![CDATA[
 
 Features
-- Initial release
+- Add missing package metadata
 
 ]]>
     </PackageReleaseNotes>
