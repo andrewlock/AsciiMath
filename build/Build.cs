@@ -37,6 +37,7 @@ class Build : NukeBuild
     [Solution(GenerateProjects = true)] readonly Solution Solution;
 
     AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
+    AbsolutePath PackOutputDirectory => ArtifactsDirectory / "packages";
 
     [Parameter] readonly string NuGetToken;
 
@@ -87,7 +88,7 @@ class Build : NukeBuild
         {
             DotNetPack(s => s
                 .SetConfiguration(Configuration)
-                .SetOutputDirectory(ArtifactsDirectory)
+                .SetOutputDirectory(PackOutputDirectory)
                 .EnableNoBuild()
                 .EnableNoRestore()
                 .When(IsServerBuild, x => x.SetProperty("ContinuousIntegrationBuild", "true"))
@@ -101,7 +102,7 @@ class Build : NukeBuild
         .After(Pack, Test)
         .Executes(() =>
         {
-            var packages = ArtifactsDirectory.GlobFiles("*.nupkg");
+            var packages = PackOutputDirectory.GlobFiles("*.nupkg");
             DotNetNuGetPush(s => s
                 .SetApiKey(NuGetToken)
                 .SetSource(NugetOrgUrl)
