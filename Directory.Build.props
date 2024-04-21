@@ -9,6 +9,7 @@
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/andrewlock/AsciiMath</PackageProjectUrl>
+    <PackageIconUrl>https://github.com/andrewlock/AsciiMath/raw/main/build/logo.png</PackageIconUrl>
     <PackageTags>asciimath math mathematics mathematical formula equation equations expression parsing latex tex netescapades</PackageTags>
     <UseArtifactsOutput>true</UseArtifactsOutput>
   </PropertyGroup>
@@ -20,6 +21,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)\build\logo.png" Pack="true" Visible="false" PackagePath="packageIcon.png" />
     <PackageReference Include="DotNet.ReproducibleBuilds" Version="1.1.1" PrivateAssets="All"/>
   </ItemGroup>
 
