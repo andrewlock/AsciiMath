@@ -306,7 +306,7 @@ internal class MathMlMarkupBuilder
         return entry is not null;
     }
 
-    public string Serialize(Node? ast, MathMlOptions options)
+    public string Serialize(Node? ast, MathMlOptions options, string originalAsciiMath)
     {
         if (ast is null)
         {
@@ -314,19 +314,53 @@ internal class MathMlMarkupBuilder
         }
 
         _sb.Clear();
-        var element = options.IsBlock switch
+        var element = options.DisplayType switch
         {
-            null => "<math>",
-            true => """<math display="block">""",
-            false => """<math display="inline">""",
+            MathMlDisplayType.None => "<math",
+            MathMlDisplayType.Block => "<math display=\"block\"",
+            MathMlDisplayType.Inline => "<math display=\"inline\"",
+            _ => throw new InvalidOperationException($"Unknown {nameof(MathMlDisplayType)} {options.DisplayType}"),
         };
 
         _sb.Append(element);
+
+        if (options.IncludeTitle)
+        {
+            _sb.Append(" title=\"");
+            AppendEscaped(_sb, originalAsciiMath);
+            _sb.Append('"');
+        }
+
+        _sb.Append('>');
 
         Append(ast, RowMode.Omit);
 
         _sb.Append("</math>");
         return _sb.ToString();
+
+        static void AppendEscaped(StringBuilder sb, string value)
+        {
+            var span = value.AsSpan();
+            while (span.IndexOf('"') is var index and >= 0)
+            {
+                if (index > 0)
+                {
+                    sb.Append(span.Slice(0, index));
+                }
+
+                sb.Append("&quot;");
+                if (index == span.Length - 1)
+                {
+                    // finished
+                    return;
+                }
+
+                span = span.Slice(index + 1);
+            }
+
+            // no more quotes, add the rest
+            sb.Append(span);
+        }
     }
 
     void Append(Node? ast, RowMode rowMode = RowMode.Avoid)

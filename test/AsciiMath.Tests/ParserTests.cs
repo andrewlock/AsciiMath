@@ -12,6 +12,27 @@ public class ParserTests(ITestOutputHelper output)
         var converted = Parser.ToMathMl(asciiMath);
         output.WriteLine(converted);
     }
+
+    [Theory]
+    [InlineData(MathMlDisplayType.None, """<math><msub><mi>log</mi><mn>2</mn></msub></math>""")]
+    [InlineData(MathMlDisplayType.Block, """<math display="block"><msub><mi>log</mi><mn>2</mn></msub></math>""")]
+    [InlineData(MathMlDisplayType.Inline, """<math display="inline"><msub><mi>log</mi><mn>2</mn></msub></math>""")]
+    public void AddsDisplayAttribute(MathMlDisplayType display, string expected)
+    {
+        var asciiMath = "log_2";
+        var converted = Parser.ToMathMl(asciiMath, new() { DisplayType = display });
+        converted.Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("log_2", """<math title="log_2"><msub><mi>log</mi><mn>2</mn></msub></math>""")]
+    [InlineData("\"someText\"", """<math title="&quot;someText&quot;"><mtext>someText</mtext></math>""")]
+    [InlineData("f = \"x\"", """<math title="f = &quot;x&quot;"><mi>f</mi><mo>=</mo><mtext>x</mtext></math>""")]
+    public void AddsTitle(string asciiMath, string expected)
+    {
+        var converted = Parser.ToMathMl(asciiMath, new() { IncludeTitle = true});
+        converted.Should().Be(expected);
+    }
     
     [Theory]
     [MemberData(nameof(TestSpec.AstTests), MemberType = typeof(TestSpec))]

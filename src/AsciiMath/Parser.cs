@@ -36,27 +36,27 @@ public static class Parser
     /// <summary>
     /// Parse the provided AsciiMath string, and convert it to a MathML string
     /// </summary>
-    /// <param name="input">The AsciiMath string</param>
+    /// <param name="asciiMath">The AsciiMath input string</param>
     /// <returns>The MathML string, or <see cref="string.Empty"/> if the string cannot be parsed</returns>
-    public static string ToMathMl(string input)
-        => ToMathMl(input, MathMlOptions.Defaults);
+    public static string ToMathMl(string asciiMath)
+        => ToMathMl(asciiMath, MathMlOptions.Defaults);
 
     /// <summary>
     /// Parse the provided AsciiMath string, and convert it to a MathML string
     /// </summary>
-    /// <param name="input">The AsciiMath string</param>
+    /// <param name="asciiMath">The AsciiMath input string</param>
     /// <param name="options">Options to use for generating the final MathML</param>
     /// <returns>The MathML string, or <see cref="string.Empty"/> if the string cannot be parsed</returns>
-    public static string ToMathMl(string input, MathMlOptions options)
+    public static string ToMathMl(string asciiMath, MathMlOptions options)
     {
-        ArgumentNullException.ThrowIfNull(input);
+        ArgumentNullException.ThrowIfNull(asciiMath);
         ArgumentNullException.ThrowIfNull(options);
 
-        if (ExpressionParser.Parse(input) is not { } node)
+        if (ExpressionParser.Parse(asciiMath) is not { } node)
         {
             return String.Empty;
         }
 
-        return MathMlMarkupBuilder.Instance.Serialize(node, options);
+        return MathMlMarkupBuilder.Instance.Serialize(node, options, asciiMath);
     }
 }
