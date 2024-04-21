@@ -83,10 +83,10 @@ internal static class ExpressionParser
 
         return (sub, sup) switch
         {
-            // Not 100% this _can't_ be null... but we'll see
-            ({ }, { }) => new SubSupNode(s, TryUnwrapParen(sub), TryUnwrapParen(sup)),
-            ({ }, _) => new SubSupNode(s, TryUnwrapParen(sub), null),
-            (_, { }) => new SubSupNode(s, null, TryUnwrapParen(sup)),
+            // TODO: Not 100% this _can't_ be null... certainly can be based on flow analysis
+            ({ }, { }) => new SubSupNode(s!, TryUnwrapParen(sub), TryUnwrapParen(sup)),
+            ({ }, _) => new SubSupNode(s!, TryUnwrapParen(sub), null),
+            (_, { }) => new SubSupNode(s!, null, TryUnwrapParen(sup)),
             (_, _) => s,
         };
     }
@@ -211,7 +211,8 @@ internal static class ExpressionParser
                     }
                     else
                     {
-                        mappedRows.Add([ToExpression([rowContent])]);
+                        //TODO: rowContent could be null
+                        mappedRows.Add([ToExpression([rowContent!])]);
                     }
                 }
 

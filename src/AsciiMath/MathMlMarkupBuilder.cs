@@ -327,30 +327,6 @@ internal class MathMlMarkupBuilder
 
         _sb.Append("</math>");
         return _sb.ToString();
-
-        static void AppendEscaped(StringBuilder sb, string value)
-        {
-            var span = value.AsSpan();
-            while (span.IndexOf('"') is var index and >= 0)
-            {
-                if (index > 0)
-                {
-                    sb.Append(span.Slice(0, index));
-                }
-
-                sb.Append("\\\""); // append \"
-                if (index == span.Length - 1)
-                {
-                    // finished
-                    return;
-                }
-
-                span = span.Slice(index + 1);
-            }
-
-            // no more quotes, add the rest
-            sb.Append(span);
-        }
     }
 
     void Append(Node? ast, RowMode rowMode = RowMode.Avoid)
