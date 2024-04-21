@@ -11,6 +11,8 @@
     <PackageProjectUrl>https://github.com/andrewlock/AsciiMath</PackageProjectUrl>
     <PackageIconUrl>https://github.com/andrewlock/AsciiMath/raw/main/build/logo.png</PackageIconUrl>
     <PackageTags>asciimath math mathematics mathematical formula equation equations expression parsing latex tex netescapades</PackageTags>
+    <Description>An AsciiMath parser that renders AsciiMath as MathML</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <UseArtifactsOutput>true</UseArtifactsOutput>
   </PropertyGroup>
 
@@ -22,6 +24,7 @@
 
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)\build\logo.png" Pack="true" Visible="false" PackagePath="packageIcon.png" />
+    <None Include="$(MSBuildThisFileDirectory)\README.md" Pack="true" PackagePath="\" />
     <PackageReference Include="DotNet.ReproducibleBuilds" Version="1.1.1" PrivateAssets="All"/>
   </ItemGroup>
 
