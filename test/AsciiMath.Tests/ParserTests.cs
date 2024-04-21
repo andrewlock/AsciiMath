@@ -9,7 +9,7 @@ public class ParserTests
     public void ParsesAstCorrectly(string asciiMath)
     {
         var spec = TestSpec.Specs[asciiMath];
-        var parsed = Parser.Parse(spec.asciiMath);
+        var parsed = ExpressionParser.Parse(spec.asciiMath);
         if (spec.ast is SequenceNode expected)
         {
             var actual = parsed.Should().NotBeNull().And.BeOfType<SequenceNode>().Subject;
@@ -29,9 +29,7 @@ public class ParserTests
     public void ConvertsToMathMlCorrectly(string asciiMath)
     {
         var spec = TestSpec.Specs[asciiMath];
-        var parsed = Parser.Parse(spec.asciiMath);
-        var builder = new MathMlMarkupBuilder();
-        var converted = builder.Serialize(parsed, []);
+        var converted = Parser.ToMathMl(spec.asciiMath);
 
         converted.Should().Be(spec.mathml);
     }
@@ -40,9 +38,7 @@ public class ParserTests
     [MemberData(nameof(AsciiMathTestSpec.AllTests), MemberType = typeof(AsciiMathTestSpec))]
     public void ConvertsToMathMlCorrectly2(string input, string output)
     {
-        var parsed = Parser.Parse(input);
-        var builder = new MathMlMarkupBuilder(escapeNonAscii: false);
-        var converted = builder.Serialize(parsed, []);
+        var converted = Parser.ToMathMl(input);
 
         var expected = output
             .Replace(">-<", ">\u2212<")

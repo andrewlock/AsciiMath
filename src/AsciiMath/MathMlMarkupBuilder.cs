@@ -5,6 +5,8 @@ namespace AsciiMath;
 
 internal class MathMlMarkupBuilder
 {
+    internal static MathMlMarkupBuilder Instance = new();
+
     private readonly StringBuilder _sb = new();
     private readonly RowMode _defaultRowMode;
     private readonly bool _escapeNonAscii;
@@ -304,7 +306,7 @@ internal class MathMlMarkupBuilder
         return entry is not null;
     }
 
-    public string Serialize(Node? ast, IEnumerable<KeyValuePair<string, string>> attributes)
+    public string Serialize(Node? ast, MathMlOptions options)
     {
         if (ast is null)
         {
@@ -312,18 +314,17 @@ internal class MathMlMarkupBuilder
         }
 
         _sb.Clear();
-        _sb.Append("<math");
-        foreach (var attr in attributes)
+        var element = options.IsBlock switch
         {
-            _sb.Append(' ')
-                .Append(attr.Key)
-                .Append("=\"");
-            AppendEscaped(_sb, attr.Value);
-            _sb.Append('"');
-        }
+            null => "<math>",
+            true => """<math display="block">""",
+            false => """<math display="inline">""",
+        };
 
-        _sb.Append('>');
+        _sb.Append(element);
+
         Append(ast, RowMode.Omit);
+
         _sb.Append("</math>");
         return _sb.ToString();
 

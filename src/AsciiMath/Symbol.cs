@@ -2,7 +2,7 @@
 
 // Keeping the original names for simplicity
 // ReSharper disable InconsistentNaming
-public enum Symbol
+internal enum Symbol
 {
     // Operation symbols
     plus,

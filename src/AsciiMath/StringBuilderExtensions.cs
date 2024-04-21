@@ -4,7 +4,7 @@ using System.Text;
 
 namespace AsciiMath;
 
-public static class StringBuilderExtensions
+internal static class StringBuilderExtensions
 {
     private static readonly SearchValues<char> ValuesToEscape = SearchValues.Create("&<>");
 
