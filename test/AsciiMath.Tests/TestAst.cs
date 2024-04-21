@@ -1,4 +1,4 @@
-﻿namespace AsciiMathParser.Tests;
+﻿namespace AsciiMath.Tests;
 
 internal static class TestAst
 {

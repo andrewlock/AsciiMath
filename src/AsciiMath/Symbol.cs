@@ -1,4 +1,4 @@
-﻿namespace AsciiMathParser;
+﻿namespace AsciiMath;
 
 // Keeping the original names for simplicity
 // ReSharper disable InconsistentNaming

@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace AsciiMathParser;
+namespace AsciiMath;
 
 /// <summary>
 /// Parser for ASCIIMath expressions.

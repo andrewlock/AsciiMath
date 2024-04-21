@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 
-namespace AsciiMathParser;
+namespace AsciiMath;
 
 internal class SymbolTable
 {

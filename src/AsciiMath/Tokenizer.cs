@@ -1,7 +1,7 @@
 ﻿using System.Buffers;
 using System.Diagnostics;
 
-namespace AsciiMathParser;
+namespace AsciiMath;
 
 /// <summary>
 /// Splits an ASCIIMath expression into a sequence of tokens.

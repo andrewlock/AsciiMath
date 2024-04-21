@@ -1,4 +1,4 @@
-﻿namespace AsciiMathParser;
+﻿namespace AsciiMath;
 
 internal readonly struct Token(TokenType type, ReadOnlyMemory<char> text, Symbol? symbol = null, Converter? converter = null)
 {

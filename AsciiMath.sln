@@ -5,11 +5,11 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E46E416D-F344-4F1D-A703-A7A6C18CFDB8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsciiMathParser", "src\AsciiMathParser\AsciiMathParser.csproj", "{FE2ED159-E53D-4F90-A4D6-D77211B01E1F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsciiMath", "src\AsciiMath\AsciiMath.csproj", "{FE2ED159-E53D-4F90-A4D6-D77211B01E1F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{86D68987-B89E-43E2-885C-66B28D10CF57}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsciiMathParser.Tests", "test\AsciiMathParser.Tests\AsciiMathParser.Tests.csproj", "{D505951B-4A5A-48AF-88F4-718042A6545E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsciiMath.Tests", "test\AsciiMath.Tests\AsciiMath.Tests.csproj", "{D505951B-4A5A-48AF-88F4-718042A6545E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_build", "build\_build.csproj", "{4299C125-19EB-488C-911B-B25C512D7422}"
 EndProject

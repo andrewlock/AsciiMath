@@ -1,6 +1,6 @@
 ﻿using FluentAssertions;
 
-namespace AsciiMathParser.Tests;
+namespace AsciiMath.Tests;
 
 public class AbstractSyntaxTreeTests
 {

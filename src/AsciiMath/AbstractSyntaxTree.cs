@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-namespace AsciiMathParser;
+namespace AsciiMath;
 
 internal abstract class Node : IFormattable
 {

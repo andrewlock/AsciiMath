@@ -1,4 +1,4 @@
-﻿namespace AsciiMathParser.Tests;
+﻿namespace AsciiMath.Tests;
 using static TestAst;
 
 internal record TestSpec(string asciiMath, Node? ast = null, string? mathml = null, string? mathml_word = null, string? html = null, string? latex =null)

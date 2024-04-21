@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\AsciiMathParser\AsciiMathParser.csproj" />
+    <ProjectReference Include="..\..\src\AsciiMath\AsciiMath.csproj" />
   </ItemGroup>
 
 </Project>

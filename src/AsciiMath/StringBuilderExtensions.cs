@@ -2,7 +2,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace AsciiMathParser;
+namespace AsciiMath;
 
 public static class StringBuilderExtensions
 {

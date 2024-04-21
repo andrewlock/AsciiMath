@@ -2,7 +2,7 @@ using FluentAssertions;
 using FluentAssertions.Execution;
 using Xunit.Abstractions;
 
-namespace AsciiMathParser.Tests;
+namespace AsciiMath.Tests;
 
 public class SymbolTableTests
 {
