@@ -2,7 +2,7 @@
 
 internal static class TestAst
 {
-    public static SymbolNode? symbol(string text)
+    public static SymbolNode symbol(string text)
     {
         return SymbolTable.TryGetEntry(text, out var entry)
             ? new SymbolNode(entry.Value.Symbol, text.AsMemory(), entry.Value.Type)
@@ -24,7 +24,7 @@ internal static class TestAst
     public static MatrixNode matrix(object[][] args)
         => matrix(symbol("("), args, symbol(")"));
 
-    public static MatrixNode matrix(SymbolNode? lparen, object[][] args, SymbolNode? rparen)
+    public static MatrixNode matrix(SymbolNode lparen, object[][] args, SymbolNode rparen)
     {
         // convert rows
         var rows = new Node[args.Length][];
@@ -47,9 +47,9 @@ internal static class TestAst
 
     public static GroupNode group(params object[] args)
     {
-        SymbolNode? lparen;
+        SymbolNode lparen;
         Node e;
-        SymbolNode? rparen;
+        SymbolNode rparen;
         
         if (args.Length == 1)
         {
@@ -71,11 +71,11 @@ internal static class TestAst
         return new GroupNode(lparen, e, rparen);
     }
     
-    public static ParenNode paren(params object[]? args)
+    public static ParenNode paren(params object[] args)
     {
-        SymbolNode? lparen = null;
-        Node? e = null;
-        SymbolNode? rparen = null;
+        SymbolNode lparen = null;
+        Node e = null;
+        SymbolNode rparen = null;
 
         if (args is null || args.Length == 1)
         {
@@ -105,7 +105,7 @@ internal static class TestAst
             _ => new SequenceNode(arr.Select(x => ToAst(x))),
         };
 
-    private static Node? ToAst(object? value)
+    private static Node ToAst(object value)
     {
         if (value is string or char)
         {

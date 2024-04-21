@@ -1,7 +1,7 @@
 ﻿namespace AsciiMath.Tests;
 using static TestAst;
 
-internal record TestSpec(string asciiMath, Node? ast = null, string? mathml = null, string? mathml_word = null, string? html = null, string? latex =null)
+internal record TestSpec(string asciiMath, Node ast = null, string mathml = null, string mathml_word = null, string html = null, string latex =null)
 {
     public static IEnumerable<object[]> AstTests() =>
         Specs.Values.Where(x => x.ast is not null).Select(x => new object[] { x.asciiMath });
