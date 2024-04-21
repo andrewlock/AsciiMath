@@ -1,9 +1,18 @@
 ﻿using FluentAssertions;
+using Xunit.Abstractions;
 
 namespace AsciiMath.Tests;
 
-public class ParserTests
+public class ParserTests(ITestOutputHelper output)
 {
+    [Fact]
+    public void ParsesSample()
+    {
+        var asciiMath = "int_-1^1 sqrt(1-x^2)dx = pi/2";
+        var converted = Parser.ToMathMl(asciiMath);
+        output.WriteLine(converted);
+    }
+    
     [Theory]
     [MemberData(nameof(TestSpec.AstTests), MemberType = typeof(TestSpec))]
     public void ParsesAstCorrectly(string asciiMath)

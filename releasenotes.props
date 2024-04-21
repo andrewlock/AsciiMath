@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <PackageReleaseNotes Condition="'$(PackageVersion)' == '0.1.0-preview'">
+      <![CDATA[
+
+Features
+- Initial release
+
+]]>
+    </PackageReleaseNotes>
+     <PackageReleaseNotes>$(PackageReleaseNotes)
+See $(PackageProjectUrl)/blob/main/CHANGELOG.md#v$(PackageVersion.Replace('.','')) for more details.</PackageReleaseNotes>
+  </PropertyGroup>
+</Project>

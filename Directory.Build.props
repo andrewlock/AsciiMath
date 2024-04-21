@@ -1,0 +1,28 @@
+<Project>
+
+  <Import Project="version.props" />
+
+  <PropertyGroup>
+    <Authors>Andrew Lock</Authors>
+    <Copyright>Copyright © AndrewLock</Copyright>
+    <NeutralLanguage>en-GB</NeutralLanguage>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/andrewlock/AsciiMath</PackageProjectUrl>
+    <PackageTags>asciimath math mathematics mathematical formula equation equations expression parsing latex tex netescapades</PackageTags>
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)\artifacts</PackageOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DotNet.ReproducibleBuilds" Version="1.1.1" PrivateAssets="All"/>
+  </ItemGroup>
+
+  <Import Project="releasenotes.props" />
+
+</Project>
