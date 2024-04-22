@@ -1,10 +1,10 @@
 <Project>
   <PropertyGroup>
-    <PackageReleaseNotes Condition="'$(PackageVersion)' == '0.2.0-beta'">
+    <PackageReleaseNotes Condition="'$(PackageVersion)' == '0.3.0-beta'">
       <![CDATA[
 
 Features
-- Allow including the math as a title
+- Render known mathematical operators as <mo> instead of <mi> as it renders better in the browser 
 
 ]]>
     </PackageReleaseNotes>

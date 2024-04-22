@@ -2,6 +2,12 @@ Changelog
 --- 
 
 
+## [v0.3.0-beta](https://github.com/andrewlock/AsciiMath/compare/v0.2.0-beta...v0.3.0-beta)
+
+### Fixes
+
+- Render known mathematical operators as <mo> instead of <mi> as it renders better in the browser 
+
 ## [v0.2.0-beta](https://github.com/andrewlock/AsciiMath/compare/v0.1.1-beta...v0.2.0-beta)
 
 ### Features
