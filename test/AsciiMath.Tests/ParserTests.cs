@@ -14,9 +14,9 @@ public class ParserTests(ITestOutputHelper output)
     }
 
     [Theory]
-    [InlineData(MathMlDisplayType.None, """<math><msub><mi>log</mi><mn>2</mn></msub></math>""")]
-    [InlineData(MathMlDisplayType.Block, """<math display="block"><msub><mi>log</mi><mn>2</mn></msub></math>""")]
-    [InlineData(MathMlDisplayType.Inline, """<math display="inline"><msub><mi>log</mi><mn>2</mn></msub></math>""")]
+    [InlineData(MathMlDisplayType.None, """<math><msub><mo>log</mo><mn>2</mn></msub></math>""")]
+    [InlineData(MathMlDisplayType.Block, """<math display="block"><msub><mo>log</mo><mn>2</mn></msub></math>""")]
+    [InlineData(MathMlDisplayType.Inline, """<math display="inline"><msub><mo>log</mo><mn>2</mn></msub></math>""")]
     public void AddsDisplayAttribute(MathMlDisplayType display, string expected)
     {
         var asciiMath = "log_2";
@@ -25,7 +25,7 @@ public class ParserTests(ITestOutputHelper output)
     }
 
     [Theory]
-    [InlineData("log_2", """<math title="log_2"><msub><mi>log</mi><mn>2</mn></msub></math>""")]
+    [InlineData("log_2", """<math title="log_2"><msub><mo>log</mo><mn>2</mn></msub></math>""")]
     [InlineData("\"someText\"", """<math title="&quot;someText&quot;"><mtext>someText</mtext></math>""")]
     [InlineData("f = \"x\"", """<math title="f = &quot;x&quot;"><mi>f</mi><mo>=</mo><mtext>x</mtext></math>""")]
     public void AddsTitle(string asciiMath, string expected)
@@ -54,6 +54,9 @@ public class ParserTests(ITestOutputHelper output)
         parsed.Should().NotBeNull().And.Be(spec.ast);
     }
 
+    // These are the test cases from the asciidoctor
+    // Note that some of the test cases have subsequently been modified
+    // based on insights from https://github.com/asciidoctor/asciimath/issues/60
     [Theory]
     [MemberData(nameof(TestSpec.MathMlTests), MemberType = typeof(TestSpec))]
     public void ConvertsToMathMlCorrectly(string asciiMath)
@@ -64,6 +67,7 @@ public class ParserTests(ITestOutputHelper output)
         converted.Should().Be(spec.mathml);
     }
 
+    // These are the test cases from the asciimath.js unit tests: https://github.com/asciimath/asciimathml/blob/master/test/unittests.js
     [Theory(Skip = "A lot of these cases aren't supported")]
     [MemberData(nameof(AsciiMathTestSpec.AllTests), MemberType = typeof(AsciiMathTestSpec))]
     public void ConvertsToMathMlCorrectly2(string input, string output)

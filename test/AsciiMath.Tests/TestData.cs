@@ -24,7 +24,8 @@ internal record TestSpec(string asciiMath, Node ast = null, string mathml = null
               'j',
               sub(symbol("vartheta"), "0")
           ),
-          mathml: """<math><munder><mover accent="true"><mi>A</mi><mo>^</mo></mover><mo>_</mo></munder><mo>=</mo><mover accent="true"><mi>A</mi><mo>^</mo></mover><mi>exp</mi><mi>j</mi><msub><mi>&#x3D1;</mi><mn>0</mn></msub></math>""",
+          // mathml: """<math><munder><mover accent="true"><mi>A</mi><mo>^</mo></mover><mo>_</mo></munder><mo>=</mo><mover accent="true"><mi>A</mi><mo>^</mo></mover><mi>exp</mi><mi>j</mi><msub><mi>&#x3D1;</mi><mn>0</mn></msub></math>""",
+          mathml: """<math><munder><mover accent="true"><mi>A</mi><mo>^</mo></mover><mo>_</mo></munder><mo>=</mo><mover accent="true"><mi>A</mi><mo>^</mo></mover><mo>exp</mo><mi>j</mi><msub><mi>&#x3D1;</mi><mn>0</mn></msub></math>""",
           mathml_word: """<math><munder><mrow><mover accent="true"><mrow><mi>A</mi></mrow><mo>^</mo></mover></mrow><mrow><mo>_</mo></mrow></munder><mo>=</mo><mover accent="true"><mrow><mi>A</mi></mrow><mo>^</mo></mover><mi>exp</mi><mi>j</mi><msub><mrow><mi>&#x3D1;</mi></mrow><mrow><mn>0</mn></mrow></msub></math>""",
           latex: """\\underset{\\text{–}}{\\hat{A}} = \\hat{A} \\exp j \\vartheta_0'"""
       ),
@@ -451,7 +452,8 @@ internal record TestSpec(string asciiMath, Node ast = null, string mathml = null
               symbol("sin"),
               subsup('a', 'c', "b")
           ),
-          mathml: """<math><mi>sin</mi><msubsup><mi>a</mi><mi>c</mi><mi>b</mi></msubsup></math>""",
+          // mathml: """<math><mi>sin</mi><msubsup><mi>a</mi><mi>c</mi><mi>b</mi></msubsup></math>""",
+          mathml: """<math><mo>sin</mo><msubsup><mi>a</mi><mi>c</mi><mi>b</mi></msubsup></math>""",
           html: """<span class="math-inline"><span class="math-identifier">sin</span><span class="math-identifier">a</span><span class="math-subsup"><span class="math-smaller"><span class="math-identifier">b</span></span><span class="math-smaller"><span class="math-identifier">c</span></span></span></span>""",
           latex: """\\sin a_c^b"""
       ),
@@ -487,7 +489,8 @@ internal record TestSpec(string asciiMath, Node ast = null, string mathml = null
       
       new TestSpec("""sin(a_c^b)""",
           ast: seq(symbol("sin"), paren(subsup('a', 'c', "b"))),
-          mathml: """<math><mi>sin</mi><mrow><mo>(</mo><msubsup><mi>a</mi><mi>c</mi><mi>b</mi></msubsup><mo>)</mo></mrow></math>""",
+          // mathml: """<math><mi>sin</mi><mrow><mo>(</mo><msubsup><mi>a</mi><mi>c</mi><mi>b</mi></msubsup><mo>)</mo></mrow></math>""",
+          mathml: """<math><mo>sin</mo><mrow><mo>(</mo><msubsup><mi>a</mi><mi>c</mi><mi>b</mi></msubsup><mo>)</mo></mrow></math>""",
           latex: """\\sin ( a_c^b )"""
       ),
       
